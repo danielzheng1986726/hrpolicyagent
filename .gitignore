@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.env
+.venv/
+venv/
+data/chunks.json
+data/faiss_index/
+*.pyc
+__pycache__
+.DS_Store

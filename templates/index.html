@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR政策助手 - 星辰科技</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            height: 90vh;
+            max-height: 800px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
+            color: white;
+            padding: 24px;
+            border-radius: 16px 16px 0 0;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .chat-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            background: #f8f9fa;
+        }
+
+        .chat-area::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-area::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .chat-area::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+
+        .message {
+            margin-bottom: 16px;
+            display: flex;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message.ai {
+            justify-content: flex-start;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            word-wrap: break-word;
+            line-height: 1.5;
+        }
+
+        .message.user .message-content {
+            background: #1a73e8;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.ai .message-content {
+            background: #e8eaed;
+            color: #202124;
+            border-bottom-left-radius: 4px;
+        }
+
+        /* Markdown样式 */
+        .message.ai .message-content h1,
+        .message.ai .message-content h2,
+        .message.ai .message-content h3 {
+            margin-top: 16px;
+            margin-bottom: 8px;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        .message.ai .message-content h1 {
+            font-size: 20px;
+        }
+
+        .message.ai .message-content h2 {
+            font-size: 18px;
+        }
+
+        .message.ai .message-content h3 {
+            font-size: 16px;
+        }
+
+        .message.ai .message-content p {
+            margin-bottom: 8px;
+        }
+
+        .message.ai .message-content ul,
+        .message.ai .message-content ol {
+            margin: 8px 0;
+            padding-left: 24px;
+        }
+
+        .message.ai .message-content li {
+            margin: 4px 0;
+        }
+
+        .message.ai .message-content strong {
+            font-weight: 600;
+        }
+
+        .message.ai .message-content em {
+            font-style: italic;
+        }
+
+        .message.ai .message-content code {
+            background: rgba(0, 0, 0, 0.1);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .message.ai .message-content pre {
+            background: rgba(0, 0, 0, 0.05);
+            padding: 12px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 8px 0;
+        }
+
+        .message.ai .message-content pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .message.ai .message-content blockquote {
+            border-left: 3px solid #1a73e8;
+            padding-left: 12px;
+            margin: 8px 0;
+            color: #666;
+        }
+
+        .message-label {
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            opacity: 0.8;
+        }
+
+        .input-area {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            border-radius: 0 0 16px 16px;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        #messageInput {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 24px;
+            font-size: 15px;
+            font-family: inherit;
+            resize: none;
+            min-height: 48px;
+            max-height: 120px;
+            transition: border-color 0.2s;
+        }
+
+        #messageInput:focus {
+            outline: none;
+            border-color: #1a73e8;
+        }
+
+        #messageInput:disabled {
+            background: #f5f5f5;
+            cursor: not-allowed;
+        }
+
+        #sendButton {
+            padding: 12px 32px;
+            background: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 24px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            min-width: 80px;
+        }
+
+        #sendButton:hover:not(:disabled) {
+            background: #1557b0;
+        }
+
+        #sendButton:disabled {
+            background: #9aa0a6;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: inline-block;
+            color: #666;
+            font-style: italic;
+        }
+
+        .error {
+            color: #d93025;
+            background: #fce8e6;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                height: 100vh;
+                max-height: 100vh;
+                border-radius: 0;
+            }
+
+            .header {
+                border-radius: 0;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .message-content {
+                max-width: 85%;
+            }
+
+            .input-area {
+                border-radius: 0;
+            }
+
+            #messageInput {
+                font-size: 16px; /* 防止iOS自动缩放 */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>HR政策助手</h1>
+            <p>星辰科技员工政策查询系统</p>
+        </div>
+
+        <div class="chat-area" id="chatArea">
+            <div class="message ai">
+                <div>
+                    <div class="message-label">AI助手</div>
+                    <div class="message-content">
+                        你好！我是星辰科技的HR政策顾问，很高兴为你服务。我可以帮助你解答关于公司政策的各类问题，比如年假、病假、薪酬福利、离职流程等。有什么我可以帮你的吗？
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <div class="input-container">
+                <div class="input-wrapper">
+                    <textarea 
+                        id="messageInput" 
+                        placeholder="请输入您的问题..." 
+                        rows="1"
+                    ></textarea>
+                </div>
+                <button id="sendButton">发送</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chatArea = document.getElementById('chatArea');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+
+        // 自动调整输入框高度
+        messageInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+
+        // Enter发送，Shift+Enter换行
+        messageInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // 发送按钮点击
+        sendButton.addEventListener('click', sendMessage);
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message || sendButton.disabled) return;
+
+            // 添加用户消息
+            addMessage('user', message);
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+
+            // 禁用输入和按钮
+            messageInput.disabled = true;
+            sendButton.disabled = true;
+            sendButton.textContent = '发送中...';
+
+            // 添加加载消息
+            const loadingElement = addMessage('ai', '<span class="loading">正在查询...</span>', true);
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                // 移除加载消息
+                removeMessage(loadingElement);
+                
+                // 添加AI回复
+                addMessage('ai', data.reply);
+
+            } catch (error) {
+                console.error('Error:', error);
+                
+                // 移除加载消息
+                removeMessage(loadingElement);
+                
+                // 添加错误消息
+                addMessage('ai', '<div class="error">抱歉，服务暂时不可用，请稍后重试。</div>', true);
+            } finally {
+                // 恢复输入和按钮
+                messageInput.disabled = false;
+                sendButton.disabled = false;
+                sendButton.textContent = '发送';
+                messageInput.focus();
+            }
+        }
+
+        function addMessage(type, content, isHtml = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            const label = type === 'user' ? '您' : 'AI助手';
+            const labelDiv = document.createElement('div');
+            labelDiv.className = 'message-label';
+            labelDiv.textContent = label;
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            
+            // 用户消息：使用textContent防止XSS（纯文本显示）
+            // AI消息：使用marked.parse()渲染Markdown，或isHtml时直接使用innerHTML
+            if (type === 'user') {
+                contentDiv.textContent = content;
+            } else {
+                // AI消息：如果是HTML（如加载提示、错误消息），直接使用；否则渲染Markdown
+                if (isHtml) {
+                    contentDiv.innerHTML = content;
+                } else {
+                    // 使用marked.js渲染Markdown
+                    if (typeof marked !== 'undefined') {
+                        contentDiv.innerHTML = marked.parse(content);
+                    } else {
+                        // 如果marked.js未加载，降级为纯文本
+                        contentDiv.textContent = content;
+                    }
+                }
+            }
+            
+            const wrapperDiv = document.createElement('div');
+            wrapperDiv.appendChild(labelDiv);
+            wrapperDiv.appendChild(contentDiv);
+            messageDiv.appendChild(wrapperDiv);
+            
+            chatArea.appendChild(messageDiv);
+            scrollToBottom();
+            
+            return messageDiv;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function removeMessage(messageElement) {
+            if (messageElement && messageElement.parentNode) {
+                messageElement.parentNode.removeChild(messageElement);
+            }
+        }
+
+        function scrollToBottom() {
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        // 页面加载后聚焦输入框
+        window.addEventListener('load', () => {
+            messageInput.focus();
+        });
+    </script>
+</body>
+</html>
