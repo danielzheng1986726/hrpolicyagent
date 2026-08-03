@@ -88,6 +88,57 @@
             font-weight: 500;
         }
 
+        .badge-bar {
+            display: inline-block;
+            margin-top: 8px;
+            background: #FFFDF7;
+            border: 2px solid #111;
+            border-radius: 14px;
+            box-shadow: 2px 2px 0 #111;
+            padding: 3px 12px;
+            font-size: 12.5px;
+            font-weight: 700;
+            cursor: default;
+        }
+
+        .badge-bar .badge-slot {
+            opacity: 0.25;
+            margin: 0 1px;
+        }
+
+        .badge-bar .badge-slot.unlocked {
+            opacity: 1;
+        }
+
+        .badge-bar.bump {
+            animation: pop 0.35s cubic-bezier(.3,1.4,.6,1);
+        }
+
+        .unlock-float {
+            position: fixed;
+            left: 50%;
+            top: 120px;
+            transform: translateX(-50%);
+            background: #FFD93D;
+            border: 3px solid #111;
+            border-radius: 12px;
+            box-shadow: 4px 4px 0 #111;
+            padding: 10px 18px;
+            font-size: 15px;
+            font-weight: 800;
+            pointer-events: none;
+            animation: unlockPop 2s ease-out forwards;
+            z-index: 99;
+        }
+
+        @keyframes unlockPop {
+            0% { opacity: 0; transform: translateX(-50%) scale(0.7); }
+            12% { opacity: 1; transform: translateX(-50%) scale(1.06); }
+            20% { transform: translateX(-50%) scale(1); }
+            80% { opacity: 1; }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-24px) scale(1); }
+        }
+
         .chat-area {
             flex: 1;
             overflow-y: auto;
@@ -386,6 +437,7 @@
         <div class="header">
             <h1><span id="mascot">🐥</span>星辰 HR 政策小灵通<span class="lv-badge">Lv.99</span></h1>
             <p>病假、年假、离职流程——不好意思问 HR 的,偷偷问我 🤫</p>
+            <div class="badge-bar" id="badgeBar" title="问不同类别的政策问题,集齐六枚图鉴!"></div>
         </div>
 
         <div class="chat-area" id="chatArea">
@@ -440,6 +492,56 @@
             mascot.classList.toggle('thinking', !!thinking);
         }
 
+        // ===== 政策探索度图鉴 =====
+        const CATEGORIES = [
+            { key: 'annual',  name: '年假假期', icon: '🏖️', re: /年假|调休|休假|婚假|产假|陪产假|事假/ },
+            { key: 'sick',    name: '病假医疗', icon: '🤒', re: /病假|医疗期|工伤|体检/ },
+            { key: 'pay',     name: '薪酬福利', icon: '💰', re: /工资|薪|年终奖|奖金|五险|公积金|福利|报销|补贴/ },
+            { key: 'leave',   name: '离职流程', icon: '🏃', re: /离职|辞职|裁员|合同到期|竞业/ },
+            { key: 'onboard', name: '入职转正', icon: '🌱', re: /入职|转正|试用期|offer|背调/i },
+            { key: 'time',    name: '加班考勤', icon: '⏰', re: /加班|工时|考勤|打卡|迟到|远程|居家/ },
+        ];
+
+        function loadBadges() {
+            try { return new Set(JSON.parse(localStorage.getItem('xc_badges') || '[]')); }
+            catch { return new Set(); }
+        }
+
+        function renderBadges(bump) {
+            const owned = loadBadges();
+            const bar = document.getElementById('badgeBar');
+            bar.innerHTML = '政策图鉴 ' +
+                CATEGORIES.map(c =>
+                    `<span class="badge-slot${owned.has(c.key) ? ' unlocked' : ''}" title="${c.name}">${c.icon}</span>`
+                ).join('') +
+                ` ${owned.size}/${CATEGORIES.length}`;
+            if (bump) {
+                bar.classList.remove('bump');
+                void bar.offsetWidth;
+                bar.classList.add('bump');
+            }
+        }
+
+        function checkBadges(message) {
+            const owned = loadBadges();
+            for (const c of CATEGORIES) {
+                if (!owned.has(c.key) && c.re.test(message)) {
+                    owned.add(c.key);
+                    localStorage.setItem('xc_badges', JSON.stringify([...owned]));
+                    renderBadges(true);
+                    const toast = document.createElement('div');
+                    toast.className = 'unlock-float';
+                    toast.textContent = `${c.icon} 解锁「${c.name}」图鉴!` +
+                        (owned.size === CATEGORIES.length ? ' 六枚集齐,你已经比大部分同事懂公司了 🏆' : '');
+                    document.body.appendChild(toast);
+                    setTimeout(() => toast.remove(), 2100);
+                    break;
+                }
+            }
+        }
+
+        renderBadges(false);
+
         // 自动调整输入框高度
         messageInput.addEventListener('input', function() {
             this.style.height = 'auto';
@@ -489,6 +591,9 @@
             addMessage('user', message);
             messageInput.value = '';
             messageInput.style.height = 'auto';
+
+            // 政策图鉴解锁检查
+            checkBadges(message);
 
             // 本地彩蛋:直接回答,不打扰后端
             const egg = localEasterEgg(message);
