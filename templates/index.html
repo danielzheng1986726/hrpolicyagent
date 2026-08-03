@@ -52,7 +52,6 @@
             font-weight: 800;
             margin-bottom: 4px;
             letter-spacing: 1px;
-            text-shadow: 2px 2px 0 #fff;
         }
 
         #mascot {
@@ -73,11 +72,12 @@
 
         .lv-badge {
             display: inline-block;
-            background: #111;
-            color: #FFD93D;
+            background: #FFFDF7;
+            color: #111;
+            border: 2px solid #111;
             font-size: 12px;
             font-weight: 700;
-            padding: 2px 8px;
+            padding: 1px 8px;
             border-radius: 10px;
             vertical-align: 6px;
             margin-left: 6px;
@@ -156,8 +156,12 @@
         }
 
         .chat-area::-webkit-scrollbar-thumb {
-            background: #111;
+            background: #C9C2B0;
             border-radius: 3px;
+        }
+
+        .chat-area::-webkit-scrollbar-thumb:hover {
+            background: #A89F87;
         }
 
         .message {
@@ -494,13 +498,42 @@
 
         // ===== 政策探索度图鉴 =====
         const CATEGORIES = [
-            { key: 'annual',  name: '年假假期', icon: '🏖️', re: /年假|调休|休假|婚假|产假|陪产假|事假/ },
-            { key: 'sick',    name: '病假医疗', icon: '🤒', re: /病假|医疗期|工伤|体检/ },
-            { key: 'pay',     name: '薪酬福利', icon: '💰', re: /工资|薪|年终奖|奖金|五险|公积金|福利|报销|补贴/ },
-            { key: 'leave',   name: '离职流程', icon: '🏃', re: /离职|辞职|裁员|合同到期|竞业/ },
-            { key: 'onboard', name: '入职转正', icon: '🌱', re: /入职|转正|试用期|offer|背调/i },
-            { key: 'time',    name: '加班考勤', icon: '⏰', re: /加班|工时|考勤|打卡|迟到|远程|居家/ },
+            { key: 'annual',  name: '年假假期', icon: '🏖️', re: /年假|调休|休假|婚假|产假|陪产假|事假/, q: '我到底能休几天年假?' },
+            { key: 'sick',    name: '病假医疗', icon: '🤒', re: /病假|医疗期|工伤|体检/, q: '病假工资怎么算?' },
+            { key: 'pay',     name: '薪酬福利', icon: '💰', re: /工资|薪|年终奖|奖金|五险|公积金|福利|报销|补贴/, q: '年终奖怎么算?' },
+            { key: 'leave',   name: '离职流程', icon: '🏃', re: /离职|辞职|裁员|合同到期|竞业/, q: '离职要提前多久打招呼?' },
+            { key: 'onboard', name: '入职转正', icon: '🌱', re: /入职|转正|试用期|offer|背调/i, q: '试用期多久能转正?' },
+            { key: 'time',    name: '加班考勤', icon: '⏰', re: /加班|工时|考勤|打卡|迟到|远程|居家/, q: '加班有加班费或者调休吗?' },
         ];
+
+        // ===== 追问建议:placeholder 只从未解锁的图鉴类别里轮播 =====
+        let currentHint = null;
+
+        function refreshHint() {
+            const owned = loadBadges();
+            const locked = CATEGORIES.filter(c => !owned.has(c.key));
+            if (locked.length === 0) {
+                currentHint = null;
+                messageInput.placeholder = '六枚图鉴已集齐 🏆 还想知道点什么?';
+                return;
+            }
+            const pick = locked[Math.floor(Math.random() * locked.length)];
+            currentHint = pick.q;
+            messageInput.placeholder = `试试问:${pick.q} ${pick.icon}`;
+        }
+
+        setInterval(() => {
+            if (!messageInput.value) refreshHint();
+        }, 5000);
+
+        // 桌面端小彩蛋:输入框为空时按 Tab,直接填入当前提示
+        messageInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Tab' && !this.value && currentHint) {
+                e.preventDefault();
+                this.value = currentHint;
+                this.dispatchEvent(new Event('input'));
+            }
+        });
 
         function loadBadges() {
             try { return new Set(JSON.parse(localStorage.getItem('xc_badges') || '[]')); }
@@ -529,6 +562,7 @@
                     owned.add(c.key);
                     localStorage.setItem('xc_badges', JSON.stringify([...owned]));
                     renderBadges(true);
+                    refreshHint();
                     const toast = document.createElement('div');
                     toast.className = 'unlock-float';
                     toast.textContent = `${c.icon} 解锁「${c.name}」图鉴!` +
