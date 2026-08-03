@@ -60,6 +60,7 @@ SYSTEM_PROMPT = """你是星辰科技有限公司的HR政策顾问，帮助员�
 3. 查询格式必须严格遵循：[SEARCH: 关键词]，例如 [SEARCH: 病假工资] 或 [SEARCH: 年假天数]
 4. 不要在没有查询的情况下直接回答政策细节问题
 5. 查询关键词要简洁精准，如"病假工资"、"年假天数"、"离职通知期"
+6. 用户可能基于上文追问（如"那病假呢？""不满一年的呢？"），要结合对话历史补全用户真正想问的内容，再决定查询关键词
 
 工作流程示例：
 用户问："病假工资怎么算？"
@@ -69,8 +70,13 @@ SYSTEM_PROMPT = """你是星辰科技有限公司的HR政策顾问，帮助员�
 用户问："你好"
 你应该直接回复问候，不要使用 [SEARCH: xxx]"""
 
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
 class ChatRequest(BaseModel):
     message: str
+    history: list[ChatMessage] = []
 
 class ChatResponse(BaseModel):
     reply: str
@@ -90,10 +96,21 @@ async def chat(request: ChatRequest):
     """聊天端点，实现ReAct模式：AI自主决定是否需要查询政策库"""
     try:
         logger.info(f"收到用户问题: {request.message}")
-        
+
+        # 多轮记忆:接收前端带来的最近对话历史(服务器无状态,记忆保存在用户浏览器)
+        # 只接受 user/assistant 角色,最多保留最近 6 条,单条截断到 2000 字符
+        history = [
+            {"role": m.role, "content": m.content[:2000]}
+            for m in request.history
+            if m.role in ("user", "assistant")
+        ][-6:]
+        if history:
+            logger.info(f"携带对话历史 {len(history)} 条")
+
         # 第一次调用AI
         messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
+            *history,
             {"role": "user", "content": request.message}
         ]
         

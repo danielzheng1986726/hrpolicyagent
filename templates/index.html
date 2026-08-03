@@ -485,6 +485,10 @@
         const sendButton = document.getElementById('sendButton');
         const mascot = document.getElementById('mascot');
 
+        // 多轮记忆:保存在本标签页内,随请求发给后端(服务器不存任何状态)
+        // 只记真实问答,彩蛋和垫场话不记,避免污染上下文
+        const chatHistory = [];
+
         // 等待时的轮播文案(评委一定会盯着这里)
         const LOADING_LINES = [
             '正在翻员工手册第 42 页…',
@@ -667,7 +671,7 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ message: message })
+                    body: JSON.stringify({ message: message, history: chatHistory.slice(-6) })
                 });
 
                 if (!response.ok) {
@@ -681,6 +685,8 @@
 
                 setMascot('🎉', false);
                 addMessage('ai', data.reply);
+                chatHistory.push({ role: 'user', content: message }, { role: 'assistant', content: data.reply });
+                if (chatHistory.length > 6) chatHistory.splice(0, chatHistory.length - 6);
                 floatXP();
                 setTimeout(() => setMascot('🐥', false), 2000);
 
