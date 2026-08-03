@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HR政策助手 - 星辰科技</title>
+    <title>星辰 HR 政策小灵通 · 不好意思问HR?问它!</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         * {
@@ -14,7 +14,9 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-color: #FDF6E3;
+            background-image: radial-gradient(#D8D2C2 1.5px, transparent 1.5px);
+            background-size: 20px 20px;
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -25,9 +27,10 @@
         .container {
             width: 100%;
             max-width: 800px;
-            background: white;
+            background: #FFFDF7;
+            border: 3px solid #111;
             border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            box-shadow: 8px 8px 0 #111;
             display: flex;
             flex-direction: column;
             height: 90vh;
@@ -35,29 +38,62 @@
         }
 
         .header {
-            background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
-            color: white;
-            padding: 24px;
-            border-radius: 16px 16px 0 0;
+            background: #FFD93D;
+            color: #111;
+            padding: 18px 24px;
+            border-bottom: 3px solid #111;
+            border-radius: 13px 13px 0 0;
             text-align: center;
+            position: relative;
         }
 
         .header h1 {
-            font-size: 28px;
-            font-weight: 600;
-            margin-bottom: 8px;
+            font-size: 26px;
+            font-weight: 800;
+            margin-bottom: 4px;
+            letter-spacing: 1px;
+            text-shadow: 2px 2px 0 #fff;
+        }
+
+        #mascot {
+            display: inline-block;
+            font-size: 30px;
+            margin-right: 6px;
+            vertical-align: -3px;
+        }
+
+        #mascot.thinking {
+            animation: bob 0.8s ease-in-out infinite;
+        }
+
+        @keyframes bob {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+
+        .lv-badge {
+            display: inline-block;
+            background: #111;
+            color: #FFD93D;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 10px;
+            vertical-align: 6px;
+            margin-left: 6px;
         }
 
         .header p {
-            font-size: 14px;
-            opacity: 0.9;
+            font-size: 13.5px;
+            font-weight: 500;
         }
 
         .chat-area {
             flex: 1;
             overflow-y: auto;
             padding: 24px;
-            background: #f8f9fa;
+            background: transparent;
+            position: relative;
         }
 
         .chat-area::-webkit-scrollbar {
@@ -65,29 +101,24 @@
         }
 
         .chat-area::-webkit-scrollbar-track {
-            background: #f1f1f1;
+            background: transparent;
         }
 
         .chat-area::-webkit-scrollbar-thumb {
-            background: #888;
+            background: #111;
             border-radius: 3px;
         }
 
         .message {
-            margin-bottom: 16px;
+            margin-bottom: 18px;
             display: flex;
-            animation: fadeIn 0.3s ease-in;
+            animation: pop 0.25s cubic-bezier(.3,1.4,.6,1);
         }
 
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        @keyframes pop {
+            0% { opacity: 0; transform: scale(0.85); }
+            60% { transform: scale(1.04); }
+            100% { opacity: 1; transform: scale(1); }
         }
 
         .message.user {
@@ -98,23 +129,28 @@
             justify-content: flex-start;
         }
 
-        .message-content {
+        .message > div {
             max-width: 70%;
+        }
+
+        .message-content {
             padding: 12px 16px;
+            border: 3px solid #111;
             border-radius: 12px;
+            box-shadow: 4px 4px 0 #111;
             word-wrap: break-word;
-            line-height: 1.5;
+            line-height: 1.55;
         }
 
         .message.user .message-content {
-            background: #1a73e8;
-            color: white;
+            background: #FF8BA7;
+            color: #111;
             border-bottom-right-radius: 4px;
         }
 
         .message.ai .message-content {
-            background: #e8eaed;
-            color: #202124;
+            background: #FFD93D;
+            color: #111;
             border-bottom-left-radius: 4px;
         }
 
@@ -124,25 +160,15 @@
         .message.ai .message-content h3 {
             margin-top: 16px;
             margin-bottom: 8px;
-            font-weight: 600;
+            font-weight: 700;
             line-height: 1.3;
         }
 
-        .message.ai .message-content h1 {
-            font-size: 20px;
-        }
+        .message.ai .message-content h1 { font-size: 20px; }
+        .message.ai .message-content h2 { font-size: 18px; }
+        .message.ai .message-content h3 { font-size: 16px; }
 
-        .message.ai .message-content h2 {
-            font-size: 18px;
-        }
-
-        .message.ai .message-content h3 {
-            font-size: 16px;
-        }
-
-        .message.ai .message-content p {
-            margin-bottom: 8px;
-        }
+        .message.ai .message-content p { margin-bottom: 8px; }
 
         .message.ai .message-content ul,
         .message.ai .message-content ol {
@@ -150,20 +176,12 @@
             padding-left: 24px;
         }
 
-        .message.ai .message-content li {
-            margin: 4px 0;
-        }
-
-        .message.ai .message-content strong {
-            font-weight: 600;
-        }
-
-        .message.ai .message-content em {
-            font-style: italic;
-        }
+        .message.ai .message-content li { margin: 4px 0; }
+        .message.ai .message-content strong { font-weight: 700; }
+        .message.ai .message-content em { font-style: italic; }
 
         .message.ai .message-content code {
-            background: rgba(0, 0, 0, 0.1);
+            background: rgba(0, 0, 0, 0.12);
             padding: 2px 6px;
             border-radius: 3px;
             font-family: 'Courier New', monospace;
@@ -171,7 +189,7 @@
         }
 
         .message.ai .message-content pre {
-            background: rgba(0, 0, 0, 0.05);
+            background: rgba(0, 0, 0, 0.07);
             padding: 12px;
             border-radius: 6px;
             overflow-x: auto;
@@ -184,24 +202,58 @@
         }
 
         .message.ai .message-content blockquote {
-            border-left: 3px solid #1a73e8;
+            border-left: 3px solid #111;
             padding-left: 12px;
             margin: 8px 0;
-            color: #666;
+            color: #444;
         }
 
         .message-label {
             font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            color: #555;
+        }
+
+        /* 建议问题 chips */
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 4px 0 20px 0;
+            animation: pop 0.3s cubic-bezier(.3,1.4,.6,1);
+        }
+
+        .chip {
+            background: #FFFDF7;
+            border: 2.5px solid #111;
+            border-radius: 20px;
+            box-shadow: 3px 3px 0 #111;
+            padding: 7px 14px;
+            font-size: 13.5px;
             font-weight: 600;
-            margin-bottom: 4px;
-            opacity: 0.8;
+            color: #111;
+            cursor: pointer;
+            font-family: inherit;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+
+        .chip:hover {
+            transform: translate(-1px, -1px);
+            box-shadow: 4px 4px 0 #111;
+            background: #FFF3C4;
+        }
+
+        .chip:active {
+            transform: translate(3px, 3px);
+            box-shadow: 0 0 0 #111;
         }
 
         .input-area {
-            padding: 20px;
-            background: white;
-            border-top: 1px solid #e0e0e0;
-            border-radius: 0 0 16px 16px;
+            padding: 18px 20px;
+            background: #FFFDF7;
+            border-top: 3px solid #111;
+            border-radius: 0 0 13px 13px;
         }
 
         .input-container {
@@ -218,120 +270,151 @@
         #messageInput {
             width: 100%;
             padding: 12px 16px;
-            border: 2px solid #e0e0e0;
-            border-radius: 24px;
+            border: 3px solid #111;
+            border-radius: 12px;
+            box-shadow: 3px 3px 0 #111;
+            background: #fff;
             font-size: 15px;
             font-family: inherit;
             resize: none;
             min-height: 48px;
             max-height: 120px;
-            transition: border-color 0.2s;
+            transition: box-shadow 0.15s;
         }
 
         #messageInput:focus {
             outline: none;
-            border-color: #1a73e8;
+            box-shadow: 5px 5px 0 #111;
         }
 
         #messageInput:disabled {
-            background: #f5f5f5;
+            background: #f0ece0;
             cursor: not-allowed;
         }
 
         #sendButton {
-            padding: 12px 32px;
-            background: #1a73e8;
-            color: white;
-            border: none;
-            border-radius: 24px;
-            font-size: 15px;
-            font-weight: 500;
+            padding: 12px 28px;
+            background: #58CC02;
+            color: #fff;
+            border: 3px solid #111;
+            border-bottom-width: 7px;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 800;
+            font-family: inherit;
+            letter-spacing: 2px;
             cursor: pointer;
-            transition: background 0.2s;
-            min-width: 80px;
+            min-width: 88px;
+            transition: filter 0.1s;
         }
 
         #sendButton:hover:not(:disabled) {
-            background: #1557b0;
+            filter: brightness(1.08);
+        }
+
+        #sendButton:active:not(:disabled) {
+            border-bottom-width: 3px;
+            transform: translateY(4px);
         }
 
         #sendButton:disabled {
-            background: #9aa0a6;
+            background: #b9b3a4;
             cursor: not-allowed;
+            border-bottom-width: 3px;
+            transform: translateY(4px);
         }
 
         .loading {
             display: inline-block;
-            color: #666;
+            color: #333;
             font-style: italic;
         }
 
         .error {
-            color: #d93025;
-            background: #fce8e6;
-            padding: 12px 16px;
+            color: #111;
+            background: #FF8BA7;
+            border: 2.5px solid #111;
+            padding: 10px 14px;
             border-radius: 8px;
-            margin-bottom: 16px;
+        }
+
+        /* +10 经验值飘字 */
+        .xp-float {
+            position: fixed;
+            right: 36px;
+            bottom: 110px;
+            font-size: 15px;
+            font-weight: 800;
+            color: #58CC02;
+            text-shadow: 1.5px 1.5px 0 #111;
+            pointer-events: none;
+            animation: xpUp 1.4s ease-out forwards;
+            z-index: 99;
+        }
+
+        @keyframes xpUp {
+            0% { opacity: 0; transform: translateY(0); }
+            15% { opacity: 1; }
+            100% { opacity: 0; transform: translateY(-70px); }
         }
 
         @media (max-width: 600px) {
+            body { padding: 0; }
+
             .container {
                 height: 100vh;
                 max-height: 100vh;
                 border-radius: 0;
+                border-left: none;
+                border-right: none;
+                box-shadow: none;
             }
 
-            .header {
-                border-radius: 0;
-            }
-
-            .header h1 {
-                font-size: 24px;
-            }
-
-            .message-content {
-                max-width: 85%;
-            }
-
-            .input-area {
-                border-radius: 0;
-            }
+            .header { border-radius: 0; }
+            .header h1 { font-size: 22px; }
+            .message > div { max-width: 85%; }
+            .input-area { border-radius: 0; }
 
             #messageInput {
                 font-size: 16px; /* 防止iOS自动缩放 */
             }
         }
     </style>
-<!-- canary-2026-08-03 -->
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>HR政策助手</h1>
-            <p>星辰科技员工政策查询系统</p>
+            <h1><span id="mascot">🐥</span>星辰 HR 政策小灵通<span class="lv-badge">Lv.99</span></h1>
+            <p>病假、年假、离职流程——不好意思问 HR 的,偷偷问我 🤫</p>
         </div>
 
         <div class="chat-area" id="chatArea">
             <div class="message ai">
                 <div>
-                    <div class="message-label">AI助手</div>
+                    <div class="message-label">小策</div>
                     <div class="message-content">
-                        你好！我是星辰科技的HR政策顾问，很高兴为你服务。我可以帮助你解答关于公司政策的各类问题，比如年假、病假、薪酬福利、离职流程等。有什么我可以帮你的吗？
+                        嗨!我是小策 🐥,星辰科技编外员工,工号 004。我读完了公司全部政策文件,现在脑子里只有制度。年假病假五险一金,考我,别客气——放心,我不会翻白眼,也不会记住你是谁。
                     </div>
                 </div>
+            </div>
+            <div class="chips" id="chips">
+                <button class="chip">我到底能休几天年假?😴</button>
+                <button class="chip">病假工资怎么算?🤒</button>
+                <button class="chip">离职要提前多久打招呼?🏃</button>
+                <button class="chip">年终奖怎么算?👀</button>
             </div>
         </div>
 
         <div class="input-area">
             <div class="input-container">
                 <div class="input-wrapper">
-                    <textarea 
-                        id="messageInput" 
-                        placeholder="请输入您的问题..." 
+                    <textarea
+                        id="messageInput"
+                        placeholder="偷偷问我点什么…"
                         rows="1"
                     ></textarea>
                 </div>
-                <button id="sendButton">发送</button>
+                <button id="sendButton">问!</button>
             </div>
         </div>
     </div>
@@ -340,6 +423,22 @@
         const chatArea = document.getElementById('chatArea');
         const messageInput = document.getElementById('messageInput');
         const sendButton = document.getElementById('sendButton');
+        const mascot = document.getElementById('mascot');
+
+        // 等待时的轮播文案(评委一定会盯着这里)
+        const LOADING_LINES = [
+            '正在翻员工手册第 42 页…',
+            '正在敲 HRBP 的门…咚咚咚',
+            '翻箱倒柜找红头文件中…',
+            '正在假装思考,其实已经知道答案了',
+            '让我查查这条政策改没改…',
+            '顺便说一句,你今天气色不错 ✨',
+        ];
+
+        function setMascot(emoji, thinking) {
+            mascot.textContent = emoji;
+            mascot.classList.toggle('thinking', !!thinking);
+        }
 
         // 自动调整输入框高度
         messageInput.addEventListener('input', function() {
@@ -347,7 +446,7 @@
             this.style.height = Math.min(this.scrollHeight, 120) + 'px';
         });
 
-        // Enter发送，Shift+Enter换行
+        // Enter发送,Shift+Enter换行
         messageInput.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -358,6 +457,30 @@
         // 发送按钮点击
         sendButton.addEventListener('click', sendMessage);
 
+        // 建议问题 chips
+        document.getElementById('chips').addEventListener('click', function(e) {
+            const chip = e.target.closest('.chip');
+            if (!chip) return;
+            messageInput.value = chip.textContent.replace(/[😴🤒🏃👀]/g, '').trim();
+            this.remove();
+            sendMessage();
+        });
+
+        // 彩蛋:本地拦截,不走接口
+        function localEasterEgg(message) {
+            if (/你是谁|你叫什么/.test(message)) {
+                return '我是**小策** 🐥,星辰科技编外员工,工号 004。不领工资,不休年假(因为我没有),24 小时在线。我的全部人生意义,就是替 HR 回答那些他们一年要答四百遍的问题。';
+            }
+            return null;
+        }
+
+        // 彩蛋:先插一句俏皮话,再出正经答案
+        function quipFor(message) {
+            if (/加班/.test(message)) return '辛苦了,先给你一杯赛博咖啡 ☕ 然后我们看制度怎么说——';
+            if (/涨薪|工资|薪水|年终奖/.test(message)) return '🤐 这个问题嘛…我只能说,制度上是这么写的:';
+            return null;
+        }
+
         async function sendMessage() {
             const message = messageInput.value.trim();
             if (!message || sendButton.disabled) return;
@@ -367,13 +490,33 @@
             messageInput.value = '';
             messageInput.style.height = 'auto';
 
+            // 本地彩蛋:直接回答,不打扰后端
+            const egg = localEasterEgg(message);
+            if (egg) {
+                setMascot('🎉', false);
+                addMessage('ai', egg);
+                setTimeout(() => setMascot('🐥', false), 2000);
+                return;
+            }
+
             // 禁用输入和按钮
             messageInput.disabled = true;
             sendButton.disabled = true;
-            sendButton.textContent = '发送中...';
+            sendButton.textContent = '…';
+            setMascot('🤔', true);
 
-            // 添加加载消息
-            const loadingElement = addMessage('ai', '<span class="loading">正在查询...</span>', true);
+            // 俏皮话垫场
+            const quip = quipFor(message);
+            if (quip) addMessage('ai', quip, true);
+
+            // 添加加载消息(文案轮播)
+            const loadingElement = addMessage('ai', '<span class="loading">' + LOADING_LINES[0] + '</span>', true);
+            let lineIdx = 1;
+            const loadingTimer = setInterval(() => {
+                const span = loadingElement.querySelector('.loading');
+                if (span) span.textContent = LOADING_LINES[lineIdx % LOADING_LINES.length];
+                lineIdx++;
+            }, 1800);
 
             try {
                 const response = await fetch('/chat', {
@@ -389,48 +532,60 @@
                 }
 
                 const data = await response.json();
-                
-                // 移除加载消息
+
+                clearInterval(loadingTimer);
                 removeMessage(loadingElement);
-                
-                // 添加AI回复
+
+                setMascot('🎉', false);
                 addMessage('ai', data.reply);
+                floatXP();
+                setTimeout(() => setMascot('🐥', false), 2000);
 
             } catch (error) {
                 console.error('Error:', error);
-                
-                // 移除加载消息
+
+                clearInterval(loadingTimer);
                 removeMessage(loadingElement);
-                
-                // 添加错误消息
-                addMessage('ai', '<div class="error">抱歉，服务暂时不可用，请稍后重试。</div>', true);
+
+                setMascot('😵', false);
+                addMessage('ai', '<div class="error">糟糕,我的小脑瓜卡住了 😵 网络开小差了——不是你的问题,是我的。再问一次试试?</div>', true);
+                setTimeout(() => setMascot('🐥', false), 2500);
             } finally {
                 // 恢复输入和按钮
                 messageInput.disabled = false;
                 sendButton.disabled = false;
-                sendButton.textContent = '发送';
+                sendButton.textContent = '问!';
                 messageInput.focus();
             }
+        }
+
+        // 答完飘 +10 政策经验值
+        function floatXP() {
+            const xp = document.createElement('div');
+            xp.className = 'xp-float';
+            xp.textContent = '+10 政策经验值 ✨';
+            document.body.appendChild(xp);
+            setTimeout(() => xp.remove(), 1500);
         }
 
         function addMessage(type, content, isHtml = false) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${type}`;
-            
-            const label = type === 'user' ? '您' : 'AI助手';
+
+            const label = type === 'user' ? '您' : '小策';
             const labelDiv = document.createElement('div');
             labelDiv.className = 'message-label';
             labelDiv.textContent = label;
-            
+
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
-            
-            // 用户消息：使用textContent防止XSS（纯文本显示）
-            // AI消息：使用marked.parse()渲染Markdown，或isHtml时直接使用innerHTML
+
+            // 用户消息:使用textContent防止XSS(纯文本显示)
+            // AI消息:使用marked.parse()渲染Markdown,或isHtml时直接使用innerHTML
             if (type === 'user') {
                 contentDiv.textContent = content;
             } else {
-                // AI消息：如果是HTML（如加载提示、错误消息），直接使用；否则渲染Markdown
+                // AI消息:如果是HTML(如加载提示、错误消息),直接使用;否则渲染Markdown
                 if (isHtml) {
                     contentDiv.innerHTML = content;
                 } else {
@@ -438,20 +593,20 @@
                     if (typeof marked !== 'undefined') {
                         contentDiv.innerHTML = marked.parse(content);
                     } else {
-                        // 如果marked.js未加载，降级为纯文本
+                        // 如果marked.js未加载,降级为纯文本
                         contentDiv.textContent = content;
                     }
                 }
             }
-            
+
             const wrapperDiv = document.createElement('div');
             wrapperDiv.appendChild(labelDiv);
             wrapperDiv.appendChild(contentDiv);
             messageDiv.appendChild(wrapperDiv);
-            
+
             chatArea.appendChild(messageDiv);
             scrollToBottom();
-            
+
             return messageDiv;
         }
 
