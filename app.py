@@ -1,5 +1,7 @@
 import os
 import re
+import json
+import time
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request
@@ -90,6 +92,99 @@ async def index(request: Request):
 async def health_check():
     """健康检查端点"""
     return {"status": "ok"}
+
+
+# ===== 匿名使用统计(不记录对话内容,不记录身份) =====
+EVENTS_PATH = "data/events.jsonl"
+STATS_TOKEN = os.getenv("STATS_TOKEN", "xc-badge-004")
+ALLOWED_EVENTS = {"visit", "ask", "unlock", "egg", "tab_fill", "leave"}
+
+
+class TrackEvent(BaseModel):
+    sid: str
+    event: str
+    meta: dict = {}
+
+
+@app.post("/event")
+async def track_event(ev: TrackEvent):
+    """埋点端点:只收白名单事件,meta 逐项截断,问题原文永不入库"""
+    if ev.event not in ALLOWED_EVENTS:
+        return {"ok": False}
+    row = {
+        "ts": round(time.time(), 1),
+        "sid": ev.sid[:40],
+        "event": ev.event,
+        "meta": {str(k)[:20]: str(v)[:120] for k, v in list(ev.meta.items())[:6]},
+    }
+    line = json.dumps(row, ensure_ascii=False)
+    # 双写:文件 + 平台日志(容器重建时文件会丢,日志是备份)
+    logger.info(f"EVENT {line}")
+    try:
+        os.makedirs("data", exist_ok=True)
+        with open(EVENTS_PATH, "a", encoding="utf-8") as f:
+            f.write(line + "\n")
+    except Exception as e:
+        logger.error(f"事件写入失败: {e}")
+    return {"ok": True}
+
+
+@app.get("/stats")
+async def stats(token: str = "", raw: int = 0):
+    """聚合统计,token 保护;raw=1 返回原始行(用于赛后导出)"""
+    if token != STATS_TOKEN:
+        raise HTTPException(status_code=403, detail="需要有效 token")
+    rows = []
+    try:
+        with open(EVENTS_PATH, encoding="utf-8") as f:
+            rows = [json.loads(l) for l in f if l.strip()]
+    except FileNotFoundError:
+        pass
+    if raw:
+        return {"count": len(rows), "rows": rows}
+
+    sids = {r["sid"] for r in rows}
+    visits = [r for r in rows if r["event"] == "visit"]
+    asks = [r for r in rows if r["event"] == "ask"]
+    unlocks = [r for r in rows if r["event"] == "unlock"]
+
+    def count_by(rows_, key):
+        out = {}
+        for r in rows_:
+            v = r["meta"].get(key, "unknown")
+            out[v] = out.get(v, 0) + 1
+        return dict(sorted(out.items(), key=lambda x: -x[1]))
+
+    # 每个 sid 的最大停留时长(取该 sid 所有 leave 事件里最大的 dur_s)
+    durs = {}
+    for r in rows:
+        if r["event"] == "leave":
+            try:
+                d = int(r["meta"].get("dur_s", 0))
+                durs[r["sid"]] = max(durs.get(r["sid"], 0), d)
+            except (ValueError, TypeError):
+                pass
+    dur_list = sorted(durs.values())
+    avg_dur = round(sum(dur_list) / len(dur_list), 1) if dur_list else 0
+    med_dur = dur_list[len(dur_list) // 2] if dur_list else 0
+
+    asked_sids = {r["sid"] for r in asks}
+    return {
+        "uv": len(sids),
+        "visits": len(visits),
+        "returning_visits": sum(1 for r in visits if r["meta"].get("ret") == "1"),
+        "sources": count_by(visits, "ref"),
+        "asks_total": len(asks),
+        "asked_uv": len(asked_sids),
+        "ask_by_category": count_by(asks, "cat"),
+        "unlocks_total": len(unlocks),
+        "unlock_by_category": count_by(unlocks, "cat"),
+        "eggs": sum(1 for r in rows if r["event"] == "egg"),
+        "tab_fills": sum(1 for r in rows if r["event"] == "tab_fill"),
+        "stay_avg_s": avg_dur,
+        "stay_median_s": med_dur,
+        "stay_samples": len(dur_list),
+    }
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):

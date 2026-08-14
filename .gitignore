@@ -16,3 +16,4 @@ data/faiss_index/
 *.egg-info/
 .eggs/
 *.egg
+data/events.jsonl

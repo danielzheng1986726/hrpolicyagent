@@ -504,6 +504,49 @@
             mascot.classList.toggle('thinking', !!thinking);
         }
 
+        // ===== 匿名使用统计:随机ID+事件计数,不发送对话内容,不采集身份 =====
+        const SID_KEY = 'xc_sid';
+        let sid = null;
+        try {
+            sid = localStorage.getItem(SID_KEY);
+            if (!sid) {
+                sid = (crypto.randomUUID ? crypto.randomUUID()
+                                         : Date.now() + '-' + String(Math.random()).slice(2, 10));
+                localStorage.setItem(SID_KEY, sid);
+            }
+        } catch (e) { sid = 'no-storage-' + String(Math.random()).slice(2, 10); }
+        const sessionStart = Date.now();
+
+        function track(event, meta) {
+            try {
+                const payload = JSON.stringify({ sid: sid, event: event, meta: meta || {} });
+                if (navigator.sendBeacon) {
+                    navigator.sendBeacon('/event', new Blob([payload], { type: 'application/json' }));
+                } else {
+                    fetch('/event', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: payload,
+                        keepalive: true
+                    }).catch(function () {});
+                }
+            } catch (e) { /* 统计永不影响主流程 */ }
+        }
+
+        try {
+            track('visit', {
+                ref: (document.referrer || 'direct').slice(0, 100),
+                ret: localStorage.getItem('xc_visited') ? '1' : '0'
+            });
+            localStorage.setItem('xc_visited', '1');
+        } catch (e) { track('visit', { ref: 'direct', ret: '0' }); }
+
+        document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState === 'hidden') {
+                track('leave', { dur_s: Math.round((Date.now() - sessionStart) / 1000) });
+            }
+        });
+
         // ===== 政策探索度图鉴 =====
         const CATEGORIES = [
             { key: 'annual',  name: '年假假期', icon: '🏖️', re: /年假|调休|休假|婚假|产假|陪产假|事假/, q: '我到底能休几天年假?' },
@@ -540,6 +583,7 @@
                 e.preventDefault();
                 this.value = currentHint;
                 this.dispatchEvent(new Event('input'));
+                track('tab_fill', {});
             }
         });
 
@@ -571,6 +615,7 @@
                     localStorage.setItem('xc_badges', JSON.stringify([...owned]));
                     renderBadges(true);
                     refreshHint();
+                    track('unlock', { cat: c.key, total: owned.size });
                     const toast = document.createElement('div');
                     toast.className = 'unlock-float';
                     toast.textContent = `${c.icon} 解锁「${c.name}」图鉴!` +
@@ -640,11 +685,16 @@
             // 本地彩蛋:直接回答,不打扰后端
             const egg = localEasterEgg(message);
             if (egg) {
+                track('egg', {});
                 setMascot('🎉', false);
                 addMessage('ai', egg);
                 setTimeout(() => setMascot('🐥', false), 2000);
                 return;
             }
+
+            // 统计:只发问题类别,不发问题原文
+            const askCat = (CATEGORIES.find(c => c.re.test(message)) || { key: 'other' }).key;
+            track('ask', { cat: askCat });
 
             // 禁用输入和按钮
             messageInput.disabled = true;
