@@ -304,6 +304,26 @@
             box-shadow: 0 0 0 #111;
         }
 
+        /* 触屏版"按Tab填入"的替代:可点的提示小气泡(仅触屏显示,由JS控制) */
+        .hint-pill {
+            display: inline-block;
+            margin-bottom: 10px;
+            padding: 6px 14px;
+            font-size: 13px;
+            font-family: inherit;
+            color: #111;
+            background: #FFF3C4;
+            border: 2px solid #111;
+            border-radius: 999px;
+            box-shadow: 2px 2px 0 #111;
+            cursor: pointer;
+        }
+
+        .hint-pill:active {
+            transform: translate(2px, 2px);
+            box-shadow: 0 0 0 #111;
+        }
+
         .input-area {
             padding: 18px 20px;
             background: #FFFDF7;
@@ -466,6 +486,7 @@
         </div>
 
         <div class="input-area">
+            <button type="button" class="hint-pill" id="hintPill" style="display:none"></button>
             <div class="input-container">
                 <div class="input-wrapper">
                     <textarea
@@ -560,17 +581,44 @@
         // ===== 追问建议:placeholder 只从未解锁的图鉴类别里轮播 =====
         let currentHint = null;
 
+        // 触屏设备没有Tab键,用可点的提示小气泡替代;桌面视觉不变
+        const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+        const hintPill = document.getElementById('hintPill');
+
+        function updateHintPill(pick) {
+            if (!IS_TOUCH || !hintPill) return;
+            if (!pick || messageInput.value) {
+                hintPill.style.display = 'none';
+                return;
+            }
+            hintPill.textContent = `试试问:${pick.q} ${pick.icon} 👆`;
+            hintPill.style.display = 'inline-block';
+        }
+
+        if (hintPill) {
+            hintPill.addEventListener('click', function () {
+                if (!currentHint) return;
+                messageInput.value = currentHint;
+                messageInput.dispatchEvent(new Event('input'));
+                hintPill.style.display = 'none';
+                messageInput.focus();
+                track('tab_fill', { src: 'tap' });
+            });
+        }
+
         function refreshHint() {
             const owned = loadBadges();
             const locked = CATEGORIES.filter(c => !owned.has(c.key));
             if (locked.length === 0) {
                 currentHint = null;
                 messageInput.placeholder = '六枚图鉴已集齐 🏆 还想知道点什么?';
+                updateHintPill(null);
                 return;
             }
             const pick = locked[Math.floor(Math.random() * locked.length)];
             currentHint = pick.q;
             messageInput.placeholder = `试试问:${pick.q} ${pick.icon}`;
+            updateHintPill(pick);
         }
 
         setInterval(() => {
@@ -633,6 +681,7 @@
         messageInput.addEventListener('input', function() {
             this.style.height = 'auto';
             this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+            if (this.value && hintPill) hintPill.style.display = 'none';
         });
 
         // Enter发送,Shift+Enter换行
